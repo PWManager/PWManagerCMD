@@ -1,2 +1,5 @@
 # PWManagerCMD
-The PWManager CMD is a updated PowerShell but on Python!
+The PWManagerCMD is a updated PowerShell but on Python!
+
+## Whats is it?
+The PWManagerCMD is a updated PowerShell but on Python!!!
