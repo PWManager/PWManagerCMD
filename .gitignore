@@ -3,3 +3,4 @@ build
 main.spec
 main.exe
 PWManagerCMD.exe
+extensions/__pycache__
