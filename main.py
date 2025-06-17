@@ -3,6 +3,7 @@ import platform
 import sys
 import colorama
 from datetime import datetime
+import importlib
 
 def set_console_title(title):
     system = platform.system()
@@ -13,6 +14,25 @@ def set_console_title(title):
         sys.stdout.write(f"\x1b]2;{title}\x07")
         sys.stdout.flush()
         
+def list_of_extensions():
+    for name, function in extension_commands.items():
+        print(f"{name}: {function}")
+        
+extension_commands = {"lsext": list_of_extensions}
+
+class extension_api:
+    def init_extension(self, name, function):
+        if not name in extension_commands:
+            extension_commands[name] = function
+        else:
+            msgtypes.print_warning(f"Extension with name '{name}' already exists! Skipping...")
+            
+    def delete_extension(self, name):
+        if name in extension_commands:
+            del extension_commands[name]
+        else:
+            msgtypes.print_warning(f"Extension with name '{name}' does not exist!")
+            
 class MessageTypes:
     def print_success(self, message):
         print(colorama.Fore.GREEN + message + colorama.Style.RESET_ALL)
@@ -31,6 +51,8 @@ class MessageTypes:
         
     def print_custom(self, message, color):
         print(color + message + colorama.Style.RESET_ALL)
+        
+msgtypes = MessageTypes()
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -54,6 +76,7 @@ def show_help():
     echo    - Вывести текст
     exit    - Выйти из программы
     sudo inlinepython - Выполнить Python код
+    lsext    - Показать список доступных расширений
     """
     print(help_text)
 
@@ -69,6 +92,33 @@ def list_directory():
     except Exception as e:
         msgtypes.print_error(f"Ошибка при чтении директории: {e}")
 
+def load_extensions():
+    extensions_dir = os.path.abspath("extensions")
+    if not os.path.exists(extensions_dir):
+        os.makedirs(extensions_dir)
+        msgtypes.print_info(f"Created extensions directory: {extensions_dir}")
+        return
+
+    if extensions_dir not in sys.path:
+        sys.path.insert(0, extensions_dir)
+
+    loaded = 0
+    for file in sorted(os.listdir(extensions_dir)):
+        if file.endswith(".py") and not file.startswith("__"):
+            module_name = file[:-3]
+            try:
+                module = importlib.import_module(module_name)
+                if hasattr(module, 'extension'):
+                    ext = module.extension(extension_api())
+                    msgtypes.print_success(f"Loaded extension: {module_name}")
+                    loaded += 1
+            except Exception as e:
+                msgtypes.print_error(f"Error loading {file}: {str(e)}")
+    
+    msgtypes.print_info(f"Total extensions loaded: {loaded}")
+        
+load_extensions()
+
 set_console_title("PWManagerCMD")
 
 if os.name == "nt":
@@ -79,8 +129,6 @@ else:
 os.chdir(path)
 
 exit_ = False
-
-msgtypes = MessageTypes()
 
 print("Welcome to the PWManagerCMD shell")
 
@@ -147,7 +195,10 @@ try:
             msgtypes.print_error("Error: 'inlinepython' command requires 'sudo' prefix.")
             
         else:
-            os.system(cmd)
+            if cmd in extension_commands:
+                extension_commands[cmd]()
+            else:
+                os.system(cmd)
             
 except KeyboardInterrupt:
     exit_ = True
