@@ -2,7 +2,6 @@ import os
 import platform
 import sys
 import colorama
-from datetime import datetime
 import importlib
 
 def set_console_title(title):
@@ -59,24 +58,36 @@ def clear_screen():
     
 def wget(url, save_path):
     try:
-        import wget
-        wget.download(url, out=save_path)
-        msgtypes.print_success(f"\nФайл успешно загружен и сохранен как {save_path}")
+        import urllib.request
+        from math import floor
+        
+        def report_progress(block_num, block_size, total_size):
+            if total_size > 0:
+                downloaded = min(block_num * block_size, total_size)
+                percent = floor(downloaded / total_size * 100)
+                print(f"\rDownloading... {percent}% ({downloaded}/{total_size} bytes)", end="")
+            else:
+                print(f"\rDownloading... {block_num * block_size} bytes", end="")
+                
+        urllib.request.urlretrieve(url, save_path, reporthook=report_progress)
+        msgtypes.print_success(f"\nFile saved as {save_path}")
+    except urllib.error.URLError as e:
+        msgtypes.print_error(f"URL Error: {e.reason}")
     except Exception as e:
-        msgtypes.print_error(f"Ошибка при загрузке файла: {e}")
+        msgtypes.print_error(f"Error downloading file: {e}")
 
 def show_help():
     help_text = """
 Доступные команды:
-    help    - Показать это сообщение
-    clear   - Очистить экран
-    pwd     - Показать текущий путь
-    ls      - Показать содержимое текущей директории
-    cd      - Сменить директорию
-    echo    - Вывести текст
-    exit    - Выйти из программы
-    sudo inlinepython - Выполнить Python код
-    lsext    - Показать список доступных расширений
+    help    - Show this message
+    clear   - Clear the screen
+    pwd     - Show the current path
+    ls      - Show the contents of the current directory
+    cd      - Switch directory
+    echo    - Show text
+    exit    - Exit the shell
+    sudo inlinepython - Execute Python code
+    lsext    - Show list of available extensions
     """
     print(help_text)
 
@@ -90,7 +101,7 @@ def list_directory():
             else:
                 print(item)
     except Exception as e:
-        msgtypes.print_error(f"Ошибка при чтении директории: {e}")
+        msgtypes.print_error(f"Error reading directory: {e}")
 
 def load_extensions():
     extensions_dir = os.path.abspath("extensions")
@@ -104,7 +115,7 @@ def load_extensions():
 
     loaded = 0
     for file in sorted(os.listdir(extensions_dir)):
-        if file.endswith(".py") and not file.startswith("__"):
+        if file.endswith(".py") and not file.startswith("__") and file != "test.py":
             module_name = file[:-3]
             try:
                 module = importlib.import_module(module_name)
