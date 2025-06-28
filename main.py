@@ -32,6 +32,9 @@ class extension_api:
         else:
             msgtypes.print_warning(f"Extension with name '{name}' does not exist!")
             
+    def get_user_home(self):
+        return f"C:\\Users\\{os.getlogin()}" if os.name == "nt" else os.path.expanduser("~")
+            
 class MessageTypes:
     def print_success(self, message):
         print(colorama.Fore.GREEN + message + colorama.Style.RESET_ALL)
